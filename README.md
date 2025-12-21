@@ -7,6 +7,7 @@ Petit projet WinForms (.NET Framework4.7.2) pour gérer des transactions (CRUD) a
 - Visual Studio2019/2022 (avec workload `.NET desktop development`)
 - MySQL Server (local ou distant) et MySQL Workbench
 - Internet pour restaurer les packages NuGet
+- (Optionnel) Docker Desktop (Windows containers mode) pour conteneuriser l'application
 
 ## Contenu du dépôt
 - `GestionBudgetWinForms/` : projet WinForms
@@ -60,6 +61,34 @@ dotnet build GestionBudgetWinForms/GestionBudgetWinForms.csproj
 ```
 
 Note: pour exécuter l'application graphique, utilisez Visual Studio.
+
+## Docker (Windows containers) — optionnel
+Cette application cible .NET Framework4.7.2 (WinForms) et nécessite Windows. Pour exécuter dans un conteneur, utilisez Docker Desktop en mode Windows containers.
+
+### Pré-requis Docker
+- Docker Desktop sur Windows
+- Docker Desktop configuré en `Switch to Windows containers...` (menu contextuel)
+
+### Construction et exécution
+1. Assurez-vous que MySQL est accessible depuis le conteneur. Si MySQL tourne sur la machine hôte, le conteneur Windows peut y accéder via `host.docker.internal`.
+2. Construire l'image et lancer le conteneur :
+
+```powershell
+# depuis le dossier racine du repo
+docker-compose -f docker-compose.windows.yml build
+docker-compose -f docker-compose.windows.yml up
+```
+
+Le `docker-compose.windows.yml` fourni définit la variable d'environnement `DEFAULT_CONNECTION` utilisée par l'application pour remplacer la chaîne dans `App.config`. Exemple :
+
+```
+DEFAULT_CONNECTION=Server=host.docker.internal;Port=3306;Database=BudgetDB;Uid=root;Pwd=yourPassword;
+```
+
+### Notes
+- Les conteneurs Windows ne peuvent pas exécuter des conteneurs Linux sur le même démon. Si vous préférez des conteneurs Linux, vous devez porter l'application sur .NET Core/.NET6+ et utiliser une autre technologie UI (par exemple, web) — pas couvert ici.
+- Si MySQL s'exécute sur une autre machine, adaptez le `DEFAULT_CONNECTION` en conséquence.
+- Pour la production, ne stockez pas les identifiants dans `App.config` ; utilisez un gestionnaire de secrets ou des variables d'environnement et des fichiers `.env` exclus de VCS.
 
 ## Vérification
 - Ouvrez MySQL Workbench et testez la connexion avec les mêmes identifiants (Test Connection).
