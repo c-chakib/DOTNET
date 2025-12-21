@@ -2,25 +2,44 @@
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
 
-/.vs
-
-/bin/
-/obj/
+# Visual Studio
+.vs/
 *.user
 *.suo
 *.userosscache
 *.sln.docstates
+
+# Build results
+[Bb]in/
+[Oo]bj/
+
+# NuGet
 packages/
 *.nupkg
-*.snk
-appsettings.*.json
-*.vs/
+
+# Visual Studio Code
 .vscode/
+
+# Rider
+.idea/
+
+# OS files
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*~
 *.tmp
+
+# Log files
 *.log
-*.cache
-*.db
-/.idea/
-# exclude App.config with credentials (keep template)
-GestionBudgetWinForms/App.config
-GestionBudgetWinForms/App.config.user
+
+# Ignore local appsettings or configs with secrets (uncomment if needed)
+# GestionBudgetWinForms/App.config
+
+# Ignore package restore folders
+**/packages/
+
+# Keep the solution and project files
+*.sln
+*.csproj
