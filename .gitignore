@@ -40,6 +40,4 @@ desktop.ini
 # Ignore package restore folders
 **/packages/
 
-# Keep the solution and project files
-*.sln
-*.csproj
+

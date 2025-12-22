@@ -36,7 +36,11 @@ namespace GestionBudgetWinForms
 
             // Lire la chaîne de connexion depuis App.config (DefaultConnection)
             var cs = ConfigurationManager.ConnectionStrings["DefaultConnection"];
-            string connectionString = cs?.ConnectionString;
+            string configConnection = cs?.ConnectionString;
+
+            // Allow override from environment variable (for Docker): DEFAULT_CONNECTION
+            string envConn = Environment.GetEnvironmentVariable("DEFAULT_CONNECTION");
+            string connectionString = !string.IsNullOrWhiteSpace(envConn) ? envConn : configConnection;
 
             if (string.IsNullOrWhiteSpace(connectionString))
             {
