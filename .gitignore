@@ -40,5 +40,5 @@ desktop.ini
 # Ignore package restore folders
 **/packages/
 
-app.config
+GestionBudgetWinForms/App.config
 
