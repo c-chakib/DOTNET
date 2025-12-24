@@ -20,7 +20,6 @@ namespace GestionBudgetWinForms
             using (MySqlConnection conn = new MySqlConnection(connectionString))
             {
                 conn.Open();
-                // simple query to validate proper connectivity
                 using (MySqlCommand cmd = new MySqlCommand("SELECT 1", conn))
                 {
                     cmd.ExecuteScalar();
@@ -32,16 +31,13 @@ namespace GestionBudgetWinForms
         // Créer la base (si nécessaire) et les tables si elles n'existent pas
         public void InitialiserBaseDeDonnees()
         {
-            // Use generic builder to avoid provider-specific enum parsing (SslMode)
             var builder = new DbConnectionStringBuilder { ConnectionString = connectionString };
-
             string databaseName = null;
             if (builder.ContainsKey("Database"))
                 databaseName = builder["Database"] as string;
             else if (builder.ContainsKey("Initial Catalog"))
                 databaseName = builder["Initial Catalog"] as string;
 
-            // Create server connection string by removing the database key
             var serverBuilder = new DbConnectionStringBuilder { ConnectionString = connectionString };
             if (databaseName != null)
             {
@@ -64,8 +60,8 @@ namespace GestionBudgetWinForms
                 }
             }
 
-            // Créer la table si elle n'existe pas
-            string createTableQuery = @"
+            // Créer la table Transactions
+            string createTransactionsTable = @"
                 CREATE TABLE IF NOT EXISTS Transactions (
                     Id INT PRIMARY KEY AUTO_INCREMENT,
                     Description VARCHAR(200) NOT NULL,
@@ -77,18 +73,34 @@ namespace GestionBudgetWinForms
 
             using (MySqlConnection conn = new MySqlConnection(connectionString))
             {
-                MySqlCommand cmd = new MySqlCommand(createTableQuery, conn);
+                MySqlCommand cmd = new MySqlCommand(createTransactionsTable, conn);
+                conn.Open();
+                cmd.ExecuteNonQuery();
+            }
+
+            // Créer la table Users
+            string createUsersTable = @"
+                CREATE TABLE IF NOT EXISTS Users (
+                    Id INT PRIMARY KEY AUTO_INCREMENT,
+                    Username VARCHAR(50) NOT NULL UNIQUE,
+                    Password VARCHAR(255) NOT NULL
+                ) ENGINE=InnoDB;";
+
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
+            {
+                MySqlCommand cmd = new MySqlCommand(createUsersTable, conn);
                 conn.Open();
                 cmd.ExecuteNonQuery();
             }
         }
 
-        // Ajouter une transaction
+        // ----------------- Transactions -----------------
+
         public int AjouterTransaction(Transaction transaction)
         {
             string query = @"INSERT INTO Transactions (Description, Montant, Type, Date, Categorie) 
-                           VALUES (@Description, @Montant, @Type, @Date, @Categorie); 
-                           SELECT LAST_INSERT_ID();";
+                             VALUES (@Description, @Montant, @Type, @Date, @Categorie); 
+                             SELECT LAST_INSERT_ID();";
 
             using (MySqlConnection conn = new MySqlConnection(connectionString))
             {
@@ -105,7 +117,6 @@ namespace GestionBudgetWinForms
             }
         }
 
-        // Modifier une transaction existante
         public void ModifierTransaction(int id, Transaction transaction)
         {
             string query = @"UPDATE Transactions SET Description = @Description, Montant = @Montant, Type = @Type, Date = @Date, Categorie = @Categorie WHERE Id = @Id";
@@ -125,7 +136,6 @@ namespace GestionBudgetWinForms
             }
         }
 
-        // Obtenir toutes les transactions
         public DataTable ObtenirToutesLesTransactions()
         {
             string query = "SELECT * FROM Transactions ORDER BY Date DESC";
@@ -140,24 +150,6 @@ namespace GestionBudgetWinForms
             return dt;
         }
 
-        // Calculer le solde total
-        public decimal CalculerSolde()
-        {
-            string query = @"SELECT (
-                IFNULL((SELECT SUM(Montant) FROM Transactions WHERE Type = 'Revenue'),0) -
-                IFNULL((SELECT SUM(Montant) FROM Transactions WHERE Type = 'Depense'),0)
-            ) AS Solde";
-
-            using (MySqlConnection conn = new MySqlConnection(connectionString))
-            {
-                MySqlCommand cmd = new MySqlCommand(query, conn);
-                conn.Open();
-                object result = cmd.ExecuteScalar();
-                return result != DBNull.Value ? Convert.ToDecimal(result) :0;
-            }
-        }
-
-        // Supprimer une transaction
         public void SupprimerTransaction(int id)
         {
             string query = "DELETE FROM Transactions WHERE Id = @Id";
@@ -171,7 +163,22 @@ namespace GestionBudgetWinForms
             }
         }
 
-        // Calculer total revenus
+        public decimal CalculerSolde()
+        {
+            string query = @"SELECT (
+                IFNULL((SELECT SUM(Montant) FROM Transactions WHERE Type = 'Revenue'),0) -
+                IFNULL((SELECT SUM(Montant) FROM Transactions WHERE Type = 'Depense'),0)
+            ) AS Solde";
+
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
+            {
+                MySqlCommand cmd = new MySqlCommand(query, conn);
+                conn.Open();
+                object result = cmd.ExecuteScalar();
+                return result != DBNull.Value ? Convert.ToDecimal(result) : 0;
+            }
+        }
+
         public decimal CalculerTotalRevenus()
         {
             string query = "SELECT IFNULL(SUM(Montant),0) FROM Transactions WHERE Type = 'Revenue'";
@@ -180,11 +187,10 @@ namespace GestionBudgetWinForms
                 MySqlCommand cmd = new MySqlCommand(query, conn);
                 conn.Open();
                 object result = cmd.ExecuteScalar();
-                return result != DBNull.Value ? Convert.ToDecimal(result) :0;
+                return result != DBNull.Value ? Convert.ToDecimal(result) : 0;
             }
         }
 
-        // Calculer total dépenses
         public decimal CalculerTotalDepenses()
         {
             string query = "SELECT IFNULL(SUM(Montant),0) FROM Transactions WHERE Type = 'Depense'";
@@ -193,7 +199,69 @@ namespace GestionBudgetWinForms
                 MySqlCommand cmd = new MySqlCommand(query, conn);
                 conn.Open();
                 object result = cmd.ExecuteScalar();
-                return result != DBNull.Value ? Convert.ToDecimal(result) :0;
+                return result != DBNull.Value ? Convert.ToDecimal(result) : 0;
+            }
+        }
+
+        // ----------------- Users -----------------
+
+        public void AjouterUser(User user)
+        {
+            string hashedPassword = PasswordHelper.HashPassword(user.PasswordHash);
+
+            string query = "INSERT INTO Users (Username, Password) VALUES (@Username, @Password)";
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
+            {
+                MySqlCommand cmd = new MySqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@Username", user.Username);
+                cmd.Parameters.AddWithValue("@Password", hashedPassword);
+                conn.Open();
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+
+        public User GetUserByUsername(string username)
+        {
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
+            {
+                string query = "SELECT * FROM Users WHERE Username=@Username";
+                MySqlCommand cmd = new MySqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@Username", username);
+                conn.Open();
+                using (var reader = cmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return new User
+                        {
+                            Id = Convert.ToInt32(reader["Id"]),
+                            Username = reader["Username"].ToString(),
+                            PasswordHash = reader["Password"].ToString()
+                        };
+                    }
+                }
+            }
+            return null;
+        }
+
+        // Vérifie si l'utilisateur peut se connecter
+        public bool Login(string username, string password, out User loggedInUser)
+        {
+            loggedInUser = GetUserByUsername(username);
+            if (loggedInUser != null)
+            {
+                return PasswordHelper.VerifyPassword(password, loggedInUser.PasswordHash);
+            }
+            return false;
+        }
+
+        public void CreateDefaultUser()
+        {
+            User existing = GetUserByUsername("admin");
+            if (existing == null)
+            {
+                AjouterUser(new User { Username = "admin", PasswordHash = "1234" });
             }
         }
     }

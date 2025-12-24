@@ -10,7 +10,7 @@ namespace GestionBudgetWinForms
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainForm());  // ⭐ Démarre avec MainForm
+            Application.Run(new LoginForm());  // ⭐ Démarre avec MainForm
         }
     }
 }
