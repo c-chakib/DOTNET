@@ -133,6 +133,7 @@ namespace GestionBudgetWinForms
             // Use the repository login function
             if (repository.Login(username, password, out User user))
             {
+                Session.CurrentUser = user;
                 MessageBox.Show($"Welcome {user.Username}!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                 // Open MainForm

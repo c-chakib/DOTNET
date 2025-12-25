@@ -32,7 +32,7 @@ namespace GestionBudgetWinForms
 
         public MainForm()
         {
-            InitializeComponent();
+            InitializeComponent();  
 
             // Lire la chaîne de connexion depuis App.config (DefaultConnection)
             var cs = ConfigurationManager.ConnectionStrings["DefaultConnection"];
@@ -149,8 +149,10 @@ namespace GestionBudgetWinForms
                     Montant = decimal.Parse(txtMontant.Text),
                     Type = cmbType.SelectedItem.ToString(),
                     Categorie = cmbCategorie.Text,
-                    Date = dtpDate.Value
+                    Date = dtpDate.Value,
+                    UserId = Session.CurrentUser.Id   
                 };
+
 
                 if (editingId == 0)
                 {
@@ -160,6 +162,7 @@ namespace GestionBudgetWinForms
                 }
                 else
                 {
+                    t.UserId = Session.CurrentUser.Id;
                     repository.ModifierTransaction(editingId, t);
                     MessageBox.Show("Transaction modifiée avec succès!", "Succès",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -203,7 +206,7 @@ namespace GestionBudgetWinForms
                 if (result == DialogResult.Yes)
                 {
                     int id = Convert.ToInt32(dgvTransactions.SelectedRows[0].Cells["Id"].Value);
-                    repository.SupprimerTransaction(id);
+                    repository.SupprimerTransaction(id, Session.CurrentUser.Id);
                     MessageBox.Show("Transaction supprimée avec succès!", "Succès",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                     ChargerTransactions();
@@ -250,7 +253,7 @@ namespace GestionBudgetWinForms
         {
             try
             {
-                DataTable dt = repository.ObtenirToutesLesTransactions();
+                DataTable dt = repository.ObtenirTransactionsParUser(Session.CurrentUser.Id);
                 dgvTransactions.DataSource = dt;
 
                 // Enable or disable the modifier button based on selection

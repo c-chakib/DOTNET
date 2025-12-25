@@ -63,20 +63,17 @@ namespace GestionBudgetWinForms
             // Créer la table Transactions
             string createTransactionsTable = @"
                 CREATE TABLE IF NOT EXISTS Transactions (
-                    Id INT PRIMARY KEY AUTO_INCREMENT,
-                    Description VARCHAR(200) NOT NULL,
-                    Montant DECIMAL(18,2) NOT NULL,
-                    Type VARCHAR(50) NOT NULL,
-                    Date DATETIME NOT NULL,
-                    Categorie VARCHAR(100) NOT NULL
-                ) ENGINE=InnoDB;";
+                Id INT PRIMARY KEY AUTO_INCREMENT,
+                Description VARCHAR(200) NOT NULL,
+                Montant DECIMAL(18,2) NOT NULL,
+                Type VARCHAR(50) NOT NULL,
+                Date DATETIME NOT NULL,
+                Categorie VARCHAR(100) NOT NULL,
+                UserId INT NOT NULL,
+                CONSTRAINT FK_Transactions_Users FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE
+            ) ENGINE=InnoDB;
+            ";
 
-            using (MySqlConnection conn = new MySqlConnection(connectionString))
-            {
-                MySqlCommand cmd = new MySqlCommand(createTransactionsTable, conn);
-                conn.Open();
-                cmd.ExecuteNonQuery();
-            }
 
             // Créer la table Users
             string createUsersTable = @"
@@ -85,22 +82,35 @@ namespace GestionBudgetWinForms
                     Username VARCHAR(50) NOT NULL UNIQUE,
                     Password VARCHAR(255) NOT NULL
                 ) ENGINE=InnoDB;";
-
+            // 1️⃣ Users table
             using (MySqlConnection conn = new MySqlConnection(connectionString))
             {
                 MySqlCommand cmd = new MySqlCommand(createUsersTable, conn);
                 conn.Open();
                 cmd.ExecuteNonQuery();
             }
+
+            // 2️⃣ Transactions table
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
+            {
+                MySqlCommand cmd = new MySqlCommand(createTransactionsTable, conn);
+                conn.Open();
+                cmd.ExecuteNonQuery();
+            }
+
         }
 
         // ----------------- Transactions -----------------
 
         public int AjouterTransaction(Transaction transaction)
         {
-            string query = @"INSERT INTO Transactions (Description, Montant, Type, Date, Categorie) 
-                             VALUES (@Description, @Montant, @Type, @Date, @Categorie); 
-                             SELECT LAST_INSERT_ID();";
+            string query = @"
+        INSERT INTO Transactions 
+        (Description, Montant, Type, Date, Categorie, UserId)
+        VALUES 
+        (@Description, @Montant, @Type, @Date, @Categorie, @UserId);
+        SELECT LAST_INSERT_ID();
+    ";
 
             using (MySqlConnection conn = new MySqlConnection(connectionString))
             {
@@ -110,16 +120,23 @@ namespace GestionBudgetWinForms
                 cmd.Parameters.AddWithValue("@Type", transaction.Type);
                 cmd.Parameters.AddWithValue("@Date", transaction.Date);
                 cmd.Parameters.AddWithValue("@Categorie", transaction.Categorie);
+                cmd.Parameters.AddWithValue("@UserId", transaction.UserId);
 
                 conn.Open();
-                object result = cmd.ExecuteScalar();
-                return Convert.ToInt32(result);
+                return Convert.ToInt32(cmd.ExecuteScalar());
             }
         }
 
+
         public void ModifierTransaction(int id, Transaction transaction)
         {
-            string query = @"UPDATE Transactions SET Description = @Description, Montant = @Montant, Type = @Type, Date = @Date, Categorie = @Categorie WHERE Id = @Id";
+            string query = @"UPDATE Transactions 
+        SET Description = @Description, 
+            Montant = @Montant, 
+            Type = @Type, 
+            Date = @Date, 
+            Categorie = @Categorie
+        WHERE Id = @Id AND UserId = @UserId";
 
             using (MySqlConnection conn = new MySqlConnection(connectionString))
             {
@@ -130,11 +147,13 @@ namespace GestionBudgetWinForms
                 cmd.Parameters.AddWithValue("@Date", transaction.Date);
                 cmd.Parameters.AddWithValue("@Categorie", transaction.Categorie);
                 cmd.Parameters.AddWithValue("@Id", id);
+                cmd.Parameters.AddWithValue("@UserId", transaction.UserId); // 🔒
 
                 conn.Open();
                 cmd.ExecuteNonQuery();
             }
         }
+
 
         public DataTable ObtenirToutesLesTransactions()
         {
@@ -150,18 +169,21 @@ namespace GestionBudgetWinForms
             return dt;
         }
 
-        public void SupprimerTransaction(int id)
+        public void SupprimerTransaction(int id, int userId)
         {
-            string query = "DELETE FROM Transactions WHERE Id = @Id";
+            string query = "DELETE FROM Transactions WHERE Id = @Id AND UserId = @UserId";
 
             using (MySqlConnection conn = new MySqlConnection(connectionString))
             {
                 MySqlCommand cmd = new MySqlCommand(query, conn);
                 cmd.Parameters.AddWithValue("@Id", id);
+                cmd.Parameters.AddWithValue("@UserId", userId); // 🔒
+
                 conn.Open();
                 cmd.ExecuteNonQuery();
             }
         }
+
 
         public decimal CalculerSolde()
         {
@@ -202,6 +224,24 @@ namespace GestionBudgetWinForms
                 return result != DBNull.Value ? Convert.ToDecimal(result) : 0;
             }
         }
+        public DataTable ObtenirTransactionsParUser(int userId)
+        {
+            string query = "SELECT * FROM Transactions WHERE UserId = @UserId ORDER BY Date DESC";
+            DataTable dt = new DataTable();
+
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
+            {
+                MySqlCommand cmd = new MySqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@UserId", userId);
+
+                MySqlDataAdapter adapter = new MySqlDataAdapter(cmd);
+                adapter.Fill(dt);
+            }
+
+            return dt;
+        }
+
+
 
         // ----------------- Users -----------------
 
