@@ -29,10 +29,37 @@ namespace GestionBudgetWinForms
         private Label lblDepenses;
         private GroupBox grpAjouter;
         private GroupBox grpStatistiques;
+        private Button btnLogout;
 
         public MainForm()
         {
-            InitializeComponent();  
+            InitializeComponent();
+            // Logout button
+            btnLogout = new Button
+            {
+                Text = "Logout",
+                Width = 100,
+                Height = 30,
+                BackColor = Color.Blue,
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9, FontStyle.Bold)
+            };
+            btnLogout.FlatAppearance.BorderSize = 0;
+
+            // Position bottom-right
+            btnLogout.Left = this.ClientSize.Width - btnLogout.Width - 20; // 20px margin from right
+            btnLogout.Top = this.ClientSize.Height - btnLogout.Height - 20; // 20px margin from bottom
+            btnLogout.Anchor = AnchorStyles.Bottom | AnchorStyles.Right; // stay bottom-right on resize
+
+            btnLogout.Click += BtnLogout_Click;
+
+            // Add to form
+            this.Controls.Add(btnLogout);
+            btnLogout.BringToFront();
+
+
+
 
             // Lire la chaîne de connexion depuis App.config (DefaultConnection)
             var cs = ConfigurationManager.ConnectionStrings["DefaultConnection"];
@@ -75,6 +102,19 @@ namespace GestionBudgetWinForms
             {
                 MessageBox.Show("Erreur lors du chargement de la transaction: " + ex.Message, "Erreur", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+        private void BtnLogout_Click(object sender, EventArgs e)
+        {
+            // Clear current session user
+            Session.CurrentUser = null;
+
+            // Hide this form and show login form
+            this.Hide();
+            LoginForm loginForm = new LoginForm();
+            loginForm.ShowDialog();
+
+            // After login form closes, close main form
+            this.Close();
         }
 
         private void BtnModifier_Click(object sender, EventArgs e)

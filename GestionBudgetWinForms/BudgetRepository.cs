@@ -259,6 +259,18 @@ namespace GestionBudgetWinForms
                 cmd.ExecuteNonQuery();
             }
         }
+        public bool UserExists(string username)
+        {
+            string query = "SELECT COUNT(*) FROM Users WHERE Username = @Username";
+
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
+            {
+                MySqlCommand cmd = new MySqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@Username", username);
+                conn.Open();
+                return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+            }
+        }
 
 
         public User GetUserByUsername(string username)

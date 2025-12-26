@@ -13,6 +13,7 @@ namespace GestionBudgetWinForms
         TextBox txtPassword;
         Button btnLogin;
         Button btnCancel;
+        Button btnRegister;
         private BudgetRepository repository;
 
         public LoginForm()
@@ -100,6 +101,20 @@ namespace GestionBudgetWinForms
             };
             btnLogin.FlatAppearance.BorderSize = 0;
             btnLogin.Click += BtnLogin_Click;
+            // Register button
+            btnRegister = new Button
+            {
+                Text = "Register",
+                Location = new Point(150, 220), // below Login
+                BackColor = Color.FromArgb(60, 180, 75), // green
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Width = 180,
+                Height = 30
+            };
+            btnRegister.FlatAppearance.BorderSize = 0;
+            btnRegister.Click += BtnRegister_Click;
+
 
             // Cancel button
             btnCancel = new Button
@@ -121,8 +136,15 @@ namespace GestionBudgetWinForms
                 lblTitle,
                 lblUsername, txtUsername,
                 lblPassword, txtPassword,
-                btnLogin, btnCancel
+                btnLogin, btnCancel,
+                btnRegister
             });
+
+        }
+        private void BtnRegister_Click(object sender, EventArgs e)
+        {
+            RegisterForm registerForm = new RegisterForm(repository);
+            registerForm.ShowDialog();
         }
 
         private void BtnLogin_Click(object sender, EventArgs e)
